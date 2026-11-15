@@ -1,0 +1,30 @@
+# CFAPEX 1.4 GitHub Actions 部署配置
+# 1. 复制一份为 wrangler.cfapex.toml
+# 2. 把下面标注 REPLACE 的占位符替换成你自己的值
+# 3. 将 wrangler.cfapex.toml 提交到仓库（不包含 CLOUDFLARE_API_TOKEN，存到 GitHub Secrets）
+
+name = "cfapex"
+main = "CFAPEX-main/CFAPEX-worker.1.4.js"
+compatibility_date = "2026-11-08"
+keep_vars = true
+workers_dev = true
+
+[[routes]]
+pattern = "cfapex.daodaocrazy.qzz.io/*"
+zone_name = "daodaocrazy.qzz.io"
+
+[[kv_namespaces]]
+binding = "K"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[[durable_objects.bindings]]
+name = "XHTTP_SESSION"
+class_name = "CfapexXhttpSession"
+
+[[migrations]]
+tag = "cfapex-xhttp-v1"
+new_sqlite_classes = ["CfapexXhttpSession"]
+
+[vars]
+A = "REPLACE_WITH_YOUR_PASSWORD_A"
+XHTTP = "0"

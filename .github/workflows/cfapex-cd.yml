@@ -1,0 +1,85 @@
+name: CFAPEX CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      sync_upstream:
+        description: '是否先同步上游 shitouxiaoge-commits/CFAPEX'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      deploy_worker:
+        description: '是否部署 Worker 到 Cloudflare'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_REPO: shitouxiaoge-commits/CFAPEX
+  UPSTREAM_BRANCH: main
+  WRANGLER_CONFIG: wrangler.cfapex.toml
+  WORKER_FILE: CFAPEX-main/CFAPEX-worker.1.4.js
+
+jobs:
+  sync-upstream:
+    if: github.event.inputs.sync_upstream == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/${{ env.UPSTREAM_REPO }}.git
+
+      - name: Fetch upstream
+        run: git fetch upstream ${{ env.UPSTREAM_BRANCH }}
+
+      - name: Merge upstream into main
+        run: |
+          git checkout main
+          git merge --no-edit upstream/${{ env.UPSTREAM_BRANCH }} || true
+
+      - name: Push merged changes
+        run: git push origin main
+
+  deploy:
+    needs: sync-upstream
+    if: always() && github.event.inputs.deploy_worker == 'true' && (needs.sync-upstream.result == 'success' || needs.sync-upstream.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wrangler
+        run: npm install -g wrangler@4
+
+      - name: Deploy Worker to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx wrangler deploy --config ${{ env.WRANGLER_CONFIG }}
