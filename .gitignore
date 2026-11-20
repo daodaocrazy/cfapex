@@ -1,0 +1,4 @@
+.wrangler/
+pages-dist/
+wrangler.generated.toml
+wrangler.local.toml
