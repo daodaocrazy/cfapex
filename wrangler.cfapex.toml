@@ -17,9 +17,6 @@ id = "00000000000000000000000000000000"
 name = "XHTTP_SESSION"
 class_name = "CfapexXhttpSession"
 
-[[migrations]]
-tag = "cfapex-xhttp-v1"
-new_sqlite_classes = ["CfapexXhttpSession"]
 
 [vars]
 A = ""
