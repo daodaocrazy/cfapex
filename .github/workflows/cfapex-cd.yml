@@ -28,7 +28,6 @@ env:
   UPSTREAM_REPO: shitouxiaoge-commits/CFAPEX
   UPSTREAM_BRANCH: main
   WRANGLER_CONFIG: wrangler.cfapex.toml
-  WORKER_FILE: CFAPEX-main/CFAPEX-worker.1.4.js
 
 jobs:
   sync-upstream:
@@ -82,16 +81,19 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_GMAIL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID_GMAIL }}
+          CFAPEX_PANEL_PASSWORD: ${{ secrets.CFAPEX_PANEL_PASSWORD }}
         run: |
           nsid=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces" | jq -r '.result[]? | select(.title=="cfapex_config") | .id' | head -n1)
           if [ "$nsid" = "" ] || [ "$nsid" = "null" ]; then
             nsid=$(curl -sS -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" -d '{"title":"cfapex_config"}' "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces" | jq -r '.result.id')
           fi
-          cp wrangler.cfapex.toml wrangler.cfapex.toml.generated
-          sed -i "s/00000000000000000000000000000000/$nsid/" wrangler.cfapex.toml.generated
-          echo "WRANGLER_CONFIG=wrangler.cfapex.toml.generated" >> $GITHUB_ENV
+          cp wrangler.cfapex.toml wrangler.generated.toml
+          sed -i "s/00000000000000000000000000000000/$nsid/" wrangler.generated.toml
+          sed -i "s|^A = \"\"|A = \"$CFAPEX_PANEL_PASSWORD\"|" wrangler.generated.toml
+          grep -E '^(name|main|workers_dev|id|A) ' wrangler.generated.toml | sed 's/^A = .*/A = "***"/'
+          echo "WRANGLER_CONFIG=wrangler.generated.toml" >> $GITHUB_ENV
       - name: Deploy Worker to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_GMAIL }}
         run: |
-          npx wrangler deploy "${{ env.WORKER_FILE }}" --name cfapex --compatibility-date 2026-11-20 --config ${{ env.WRANGLER_CONFIG }}
+          npx wrangler deploy --config "$WRANGLER_CONFIG"

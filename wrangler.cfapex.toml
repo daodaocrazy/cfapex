@@ -1,22 +1,15 @@
-# CFAPEX 1.4 GitHub Actions 部署配置
-# 1. 复制一份为 wrangler.cfapex.toml
-# 2. 把下面标注 REPLACE 的占位符替换成你自己的值
-# 3. 将 wrangler.cfapex.toml 提交到仓库（不包含 CLOUDFLARE_API_TOKEN，存到 GitHub Secrets）
+# CFAPEX 1.5 GitHub Actions deploy config
+# Secrets: CLOUDFLARE_API_TOKEN_GMAIL, CLOUDFLARE_ACCOUNT_ID_GMAIL, CFAPEX_PANEL_PASSWORD
 
 name = "cfapex"
-main = "CFAPEX-main/CFAPEX-worker.1.4.js"
-compatibility_date = "2026-11-08"
+main = "CFAPEX-worker.1.5.js"
+compatibility_date = "2026-11-20"
 keep_vars = true
-workers_dev = false
+workers_dev = true
 
 [[kv_namespaces]]
 binding = "K"
 id = "00000000000000000000000000000000"
-
-[[durable_objects.bindings]]
-name = "XHTTP_SESSION"
-class_name = "CfapexXhttpSession"
-
 
 [vars]
 A = ""
